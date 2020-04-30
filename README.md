@@ -2,7 +2,7 @@
 Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI 
 
 ## TikiSpawn Example(IL):
-* Before *
+*Before:*
 ```
 .class public auto ansi beforefieldinit TikiSpawn
 	extends [mscorlib]System.Object
@@ -31,7 +31,7 @@ Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI
 		/* 0x00000266 2A           */ IL_0016: ret
 	} // end of method TikiSpawn::.ctor
 ```
-* After *
+*After:*
 ```
 .class public auto ansi beforefieldinit EVMR2Y8ZMC.JPEQYLSVTO
 	extends [mscorlib]System.Object
@@ -64,4 +64,4 @@ Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI
 		/* 0x00000281 2806000006   */ IL_0031: call      instance void EVMR2Y8ZMC.JPEQYLSVTO::'40W6NX6Z4J'(string, string)
 		/* 0x00000286 2A           */ IL_0036: ret
 	} // end of method JPEQYLSVTO::.ctor
-```1
+```
