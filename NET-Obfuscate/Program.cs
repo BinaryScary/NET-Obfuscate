@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.CommandLine;
+using System.CommandLine.DragonFruit;
 
 using dnlib.DotNet;
 using dnlib.DotNet.Emit;
@@ -130,7 +132,7 @@ namespace Obfuscate
             md.Assembly.Name = encName;
 
             // should "GuidAttribute" be changed aswell? or assembly version
-            // obfuscate Assembly Attributes(AssemblyInfo)
+            // obfuscate Assembly Attributes(AssemblyInfo) .rc file
             string[] attri = { "AssemblyDescriptionAttribute", "AssemblyTitleAttribute", "AssemblyProductAttribute", "AssemblyCopyrightAttribute", "AssemblyCompanyAttribute","AssemblyFileVersionAttribute"};
             foreach (CustomAttribute attribute in md.Assembly.CustomAttributes) {
                 if (attri.Any(attribute.AttributeType.Name.Contains)) {
@@ -141,13 +143,11 @@ namespace Obfuscate
             }
         }
 
-        // TODO: obfuscate assembly icon
-        // TODO: obfuscate parameters
-        // TODO: obfuscate fields, do I need to?
-        // TODO: keep list of random strings, make sure no names overlap
-        static void Main(string[] args)
+        static void obfuscate(string inFile, string outFile)
         {
-            string pathExec = @"C:\Users\User\Source\Repos\SharpHound3\SharpHound3\bin\x64\Release\SharpHound.exe";
+            if (inFile == "" || outFile == "") return;
+
+            string pathExec = inFile;
 
             // cecil moduel ref(similar to dnlib): https://www.mono-project.com/docs/tools+libraries/libraries/Mono.Cecil/faq/
             // load ECMA CIL (.NET IL)
@@ -162,7 +162,27 @@ namespace Obfuscate
             // comments are also stripped during compile
             cleanAsm(md);
 
-            md.Write(@"C:\Users\User\Desktop\Obfuscated.exe");
+            md.Write(outFile);
+        }
+
+        // TODO: GUI and CLI
+        // TODO: obfuscate assembly icon
+        // TODO: obfuscate parameters
+        // TODO: obfuscate fields, do I need to?
+        // TODO: keep list of random strings, make sure no names overlap
+
+        /// <summary>
+        /// Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI 
+        /// </summary>
+        /// <param name="inFile">The .Net assembly path you want to obfuscate</param>
+        /// <param name="outFile">Path to the newly obfuscated file, default is "inFile".obfuscated</param>
+        static void Main(string inFile = "", string outFile = "")
+        {
+            if(outFile == "")
+            {
+                outFile = inFile + ".Obfuscated";
+            }
+            obfuscate(inFile,outFile);
         }
     }
 }
