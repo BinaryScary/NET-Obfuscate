@@ -1,5 +1,15 @@
 # NET-Obfuscate
 Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI 
+```
+PS C:\Users\User\Source\Repos\NET-Obfuscate\NET-Obfuscate\bin\x64\Release> .\NET-Obfuscate.exe -h                       Usage:
+  NET-Obfuscate [options]
+
+Options:
+  --in-file <in-file>      The .Net assembly path you want to obfuscate
+  --out-file <out-file>    Path to the newly obfuscated file, default is "inFile".obfuscated
+  --version                Show version information
+  -?, -h, --help           Show help and usage information
+```
 
 ## TikiSpawn Example(IL):
 *Before:*
