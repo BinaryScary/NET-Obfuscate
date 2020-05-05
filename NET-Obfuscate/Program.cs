@@ -16,46 +16,22 @@ namespace Obfuscate
     class Obfuscate
     {
         private static Random random = new Random();
+        private static List<String> names = new List<string>();
+        // Reference: https://stackoverflow.com/a/1344242/11567632
         public static string RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-              .Select(s => s[random.Next(s.Length)]).ToArray());
+            string name = "";
+            do {
+                name = new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+            } while (names.Contains(name));
+
+            return name;
         }
 
-        // obfuscates method names
-        public static void obfuscateMethods(ModuleDef md)
-        {
-            foreach (var type in md.GetTypes())
-            {
-                // create method to obfuscation map
-                foreach (MethodDef method in type.Methods)
-                {
-                    // empty method check
-                    if (!method.HasBody) continue;
-
-                    // Obfuscate constructor
-                    if (method.IsConstructor) continue;
-
-                    string encName = RandomString(10);
-                    Console.WriteLine($"{method.Name} -> {encName}");
-                    method.Name = encName;
-                }
-            }
-        }
-
-        public static void obfuscateClasses(ModuleDef md)
-        {
-            foreach (var type in md.GetTypes())
-            {
-                string encName = RandomString(10);
-                Console.WriteLine($"{type.Name} -> {encName}");
-                type.Name = encName;
-            }
-
-        }
-
-        // fixes errors that occur due to instruction insertion
+        /// <summary>
+        /// fixes discrepancies in IL such as maxstack errors that occur due to instruction insertion
+        /// </summary>
         public static void cleanAsm(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
@@ -72,8 +48,7 @@ namespace Obfuscate
             }
         }
 
-        // object are default pass by ref
-        // TODO: implement custom decryptor
+        // reference: https://github.com/CodeOfDark/Tutorials-StringEncryption
         public static void obfuscateStrings(ModuleDef md)
         {
             //foreach (var type in md.Types) // only gets parent(non-nested) classes
@@ -100,15 +75,44 @@ namespace Obfuscate
                             String encString = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(regString));
                             Console.WriteLine($"{regString} -> {encString}");
                             // methodology for adding code: write it in plain c#, compile, then view IL in dnspy
-                            method.Body.Instructions[i].OpCode = OpCodes.Nop; // erase orginal string instruction
-                            method.Body.Instructions.Insert(i + 1, new Instruction(OpCodes.Call, md.Import(typeof(System.Text.Encoding).GetMethod("get_UTF8", new Type[] { })))); // call Method (get_UTF8) from Type (System.Text.Encoding) no parameters
-                            method.Body.Instructions.Insert(i + 2, new Instruction(OpCodes.Ldstr, encString)); // Load string onto stack
-                            method.Body.Instructions.Insert(i + 3, new Instruction(OpCodes.Call, md.Import(typeof(System.Convert).GetMethod("FromBase64String", new Type[] { typeof(string) })))); // call method FromBase64String with string parameter loaded from stack, returned value will be loaded onto stack
-                            method.Body.Instructions.Insert(i + 4, new Instruction(OpCodes.Callvirt, md.Import(typeof(System.Text.Encoding).GetMethod("GetString", new Type[] { typeof(byte[]) })))); // call method GetString with bytes parameter loaded from stack 
+                            method.Body.Instructions[i] = new Instruction(OpCodes.Call, md.Import(typeof(System.Text.Encoding).GetMethod("get_UTF8", new Type[] { })));
+                            method.Body.Instructions.Insert(i + 1, new Instruction(OpCodes.Ldstr, encString)); // Load string onto stack
+                            method.Body.Instructions.Insert(i + 2, new Instruction(OpCodes.Call, md.Import(typeof(System.Convert).GetMethod("FromBase64String", new Type[] { typeof(string) })))); // call method FromBase64String with string parameter loaded from stack, returned value will be loaded onto stack
+                            method.Body.Instructions.Insert(i + 3, new Instruction(OpCodes.Callvirt, md.Import(typeof(System.Text.Encoding).GetMethod("GetString", new Type[] { typeof(byte[]) })))); // call method GetString with bytes parameter loaded from stack 
                             i += 4; //skip the Instructions as to not recurse on them
                         }
                     }
                 }
+            }
+
+        }
+
+        public static void obfuscateMethods(ModuleDef md)
+        {
+            foreach (var type in md.GetTypes())
+            {
+                // create method to obfuscation map
+                foreach (MethodDef method in type.Methods)
+                {
+                    // empty method check
+                    if (!method.HasBody) continue;
+                    // Obfuscate constructor
+                    if (method.IsConstructor) continue;
+
+                    string encName = RandomString(10);
+                    Console.WriteLine($"{method.Name} -> {encName}");
+                    method.Name = encName;
+                }
+            }
+        }
+
+        public static void obfuscateClasses(ModuleDef md)
+        {
+            foreach (var type in md.GetTypes())
+            {
+                string encName = RandomString(10);
+                Console.WriteLine($"{type.Name} -> {encName}");
+                type.Name = encName;
             }
 
         }
@@ -131,9 +135,9 @@ namespace Obfuscate
             Console.WriteLine($"{md.Assembly.Name} -> {encName}");
             md.Assembly.Name = encName;
 
-            // should "GuidAttribute" be changed aswell? or assembly version
             // obfuscate Assembly Attributes(AssemblyInfo) .rc file
             string[] attri = { "AssemblyDescriptionAttribute", "AssemblyTitleAttribute", "AssemblyProductAttribute", "AssemblyCopyrightAttribute", "AssemblyCompanyAttribute","AssemblyFileVersionAttribute"};
+            // "GuidAttribute", and assembly version can also be changed
             foreach (CustomAttribute attribute in md.Assembly.CustomAttributes) {
                 if (attri.Any(attribute.AttributeType.Name.Contains)) {
                     string encAttri = RandomString(10);
@@ -143,6 +147,11 @@ namespace Obfuscate
             }
         }
 
+        /// <summary>
+        /// Obfuscate ECMA CIL (.NET IL) assemblies by obfuscating names of methods, classes, namespaces, assemblyInfo and encoding strings
+        /// </summary>
+        /// <param name="inFile">The .Net assembly path you want to obfuscate</param>
+        /// <param name="outFile">Path to the newly obfuscated file, default is "inFile".obfuscated</param>
         static void obfuscate(string inFile, string outFile)
         {
             if (inFile == "" || outFile == "") return;
@@ -158,18 +167,13 @@ namespace Obfuscate
             obfuscateClasses(md);
             obfuscateNamespace(md);
             obfuscateAssemblyInfo(md);
-            //obfuscateVariables(md); // md.Write already simplifies variable names to there type in effect obfuscating them from antivirus i.e: aesSetup -> aes1, aesRun -> aes2
-            // comments are also stripped during compile
+            //obfuscateVariables(md); // md.Write already simplifies variable names to there type in effect mangling them i.e: aesSetup -> aes1, aesRun -> aes2
+            //obfuscateComments(md); // comments are stripped during compile opitmization
+
             cleanAsm(md);
 
             md.Write(outFile);
         }
-
-        // TODO: GUI and CLI
-        // TODO: obfuscate assembly icon
-        // TODO: obfuscate parameters
-        // TODO: obfuscate fields, do I need to?
-        // TODO: keep list of random strings, make sure no names overlap
 
         /// <summary>
         /// Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI 
