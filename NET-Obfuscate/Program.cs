@@ -75,13 +75,15 @@ namespace Obfuscate
                             String encString = Convert.ToBase64String(UTF8Encoding.UTF8.GetBytes(regString));
                             Console.WriteLine($"{regString} -> {encString}");
                             // methodology for adding code: write it in plain c#, compile, then view IL in dnspy
-                            method.Body.Instructions[i] = new Instruction(OpCodes.Call, md.Import(typeof(System.Text.Encoding).GetMethod("get_UTF8", new Type[] { })));
-                            method.Body.Instructions.Insert(i + 1, new Instruction(OpCodes.Ldstr, encString)); // Load string onto stack
-                            method.Body.Instructions.Insert(i + 2, new Instruction(OpCodes.Call, md.Import(typeof(System.Convert).GetMethod("FromBase64String", new Type[] { typeof(string) })))); // call method FromBase64String with string parameter loaded from stack, returned value will be loaded onto stack
-                            method.Body.Instructions.Insert(i + 3, new Instruction(OpCodes.Callvirt, md.Import(typeof(System.Text.Encoding).GetMethod("GetString", new Type[] { typeof(byte[]) })))); // call method GetString with bytes parameter loaded from stack 
+                            method.Body.Instructions[i].OpCode = OpCodes.Nop; // errors occur if instruction not replaced with Nop
+                            method.Body.Instructions.Insert(i + 1,new Instruction(OpCodes.Call, md.Import(typeof(System.Text.Encoding).GetMethod("get_UTF8", new Type[] { })))); // Load string onto stack
+                            method.Body.Instructions.Insert(i + 2, new Instruction(OpCodes.Ldstr, encString)); // Load string onto stack
+                            method.Body.Instructions.Insert(i + 3, new Instruction(OpCodes.Call, md.Import(typeof(System.Convert).GetMethod("FromBase64String", new Type[] { typeof(string) })))); // call method FromBase64String with string parameter loaded from stack, returned value will be loaded onto stack
+                            method.Body.Instructions.Insert(i + 4, new Instruction(OpCodes.Callvirt, md.Import(typeof(System.Text.Encoding).GetMethod("GetString", new Type[] { typeof(byte[]) })))); // call method GetString with bytes parameter loaded from stack 
                             i += 4; //skip the Instructions as to not recurse on them
                         }
                     }
+                    //method.Body.KeepOldMaxStack = true;
                 }
             }
 
@@ -161,6 +163,7 @@ namespace Obfuscate
             // cecil moduel ref(similar to dnlib): https://www.mono-project.com/docs/tools+libraries/libraries/Mono.Cecil/faq/
             // load ECMA CIL (.NET IL)
             ModuleDef md = ModuleDefMD.Load(pathExec);
+            md.Name = RandomString(10);
 
             obfuscateStrings(md);
             obfuscateMethods(md);
@@ -180,7 +183,7 @@ namespace Obfuscate
         /// </summary>
         /// <param name="inFile">The .Net assembly path you want to obfuscate</param>
         /// <param name="outFile">Path to the newly obfuscated file, default is "inFile".obfuscated</param>
-        static void Main(string inFile = "", string outFile = "")
+        static void Main(string inFile = @"", string outFile = @"")
         {
             if(outFile == "")
             {
