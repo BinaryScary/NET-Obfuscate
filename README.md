@@ -1,5 +1,6 @@
 # NET-Obfuscate
-Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI 
+Obfuscate ECMA CIL (.NET IL) assemblies to evade Windows Defender AMSI.
+Accompanying blog-post: https://www.xanthus.io/post/building-an-obfuscator-to-evade-windows-defender
 ```
 PS C:\Users\User\Source\Repos\NET-Obfuscate\NET-Obfuscate\bin\x64\Release> .\NET-Obfuscate.exe -h                       Usage:
   NET-Obfuscate [options]
