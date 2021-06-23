@@ -98,8 +98,10 @@ namespace Obfuscate
                 {
                     // empty method check
                     if (!method.HasBody) continue;
-                    // Obfuscate constructor
+                    // method is a constructor
                     if (method.IsConstructor) continue;
+                    // method overrides another
+                    if (method.HasOverrides) continue;
 
                     string encName = RandomString(10);
                     Console.WriteLine($"{method.Name} -> {encName}");
