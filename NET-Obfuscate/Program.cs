@@ -18,7 +18,7 @@ namespace Obfuscate
         private static Random random = new Random();
         private static List<String> names = new List<string>();
         // Reference: https://stackoverflow.com/a/1344242/11567632
-        public static string RandomString(int length)
+        public static string random_string(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             string name = "";
@@ -32,7 +32,7 @@ namespace Obfuscate
         /// <summary>
         /// fixes discrepancies in IL such as maxstack errors that occur due to instruction insertion
         /// </summary>
-        public static void cleanAsm(ModuleDef md)
+        public static void clean_asm(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
             {
@@ -49,7 +49,7 @@ namespace Obfuscate
         }
 
         // reference: https://github.com/CodeOfDark/Tutorials-StringEncryption
-        public static void obfuscateStrings(ModuleDef md)
+        public static void obfuscate_strings(ModuleDef md)
         {
             //foreach (var type in md.Types) // only gets parent(non-nested) classes
 
@@ -89,7 +89,7 @@ namespace Obfuscate
 
         }
 
-        public static void obfuscateMethods(ModuleDef md)
+        public static void obfuscate_methods(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
             {
@@ -102,40 +102,44 @@ namespace Obfuscate
                     if (method.IsConstructor) continue;
                     // method overrides another
                     if (method.HasOverrides) continue;
+                    // method has a rtspecialname, VES needs proper name
+                    if (method.IsRuntimeSpecialName) continue;
+                    // method foward declaration
+                    if (method.DeclaringType.IsForwarder) continue;
 
-                    string encName = RandomString(10);
+                    string encName = random_string(10);
                     Console.WriteLine($"{method.Name} -> {encName}");
                     method.Name = encName;
                 }
             }
         }
 
-        public static void obfuscateClasses(ModuleDef md)
+        public static void obfuscate_classes(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
             {
-                string encName = RandomString(10);
+                string encName = random_string(10);
                 Console.WriteLine($"{type.Name} -> {encName}");
                 type.Name = encName;
             }
 
         }
 
-        public static void obfuscateNamespace(ModuleDef md)
+        public static void obfuscate_namespace(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
             {
-                string encName = RandomString(10);
+                string encName = random_string(10);
                 Console.WriteLine($"{type.Namespace} -> {encName}");
                 type.Namespace = encName;
             }
 
         }
 
-        public static void obfuscateAssemblyInfo(ModuleDef md)
+        public static void obfuscate_assembly_info(ModuleDef md)
         {
             // obfuscate assembly name
-            string encName = RandomString(10);
+            string encName = random_string(10);
             Console.WriteLine($"{md.Assembly.Name} -> {encName}");
             md.Assembly.Name = encName;
 
@@ -144,7 +148,7 @@ namespace Obfuscate
             // "GuidAttribute", and assembly version can also be changed
             foreach (CustomAttribute attribute in md.Assembly.CustomAttributes) {
                 if (attri.Any(attribute.AttributeType.Name.Contains)) {
-                    string encAttri = RandomString(10);
+                    string encAttri = random_string(10);
                     Console.WriteLine($"{attribute.AttributeType.Name} = {encAttri}");
                     attribute.ConstructorArguments[0] = new CAArgument(md.CorLibTypes.String, new UTF8String(encAttri));
                 }
@@ -165,17 +169,17 @@ namespace Obfuscate
             // cecil moduel ref(similar to dnlib): https://www.mono-project.com/docs/tools+libraries/libraries/Mono.Cecil/faq/
             // load ECMA CIL (.NET IL)
             ModuleDef md = ModuleDefMD.Load(pathExec);
-            md.Name = RandomString(10);
+            md.Name = random_string(10);
 
-            obfuscateStrings(md);
-            obfuscateMethods(md);
-            obfuscateClasses(md);
-            obfuscateNamespace(md);
-            obfuscateAssemblyInfo(md);
+            obfuscate_strings(md);
+            obfuscate_methods(md);
+            obfuscate_classes(md);
+            obfuscate_namespace(md);
+            obfuscate_assembly_info(md);
             //obfuscateVariables(md); // md.Write already simplifies variable names to there type in effect mangling them i.e: aesSetup -> aes1, aesRun -> aes2
             //obfuscateComments(md); // comments are stripped during compile opitmization
 
-            cleanAsm(md);
+            clean_asm(md);
 
             md.Write(outFile);
         }
