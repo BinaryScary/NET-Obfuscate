@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -114,12 +114,24 @@ namespace Obfuscate
             }
         }
 
+        public static void obfuscate_resources(ModuleDef md, String name, String encName)
+        {
+            if (name == "") return;
+            foreach (var resouce in md.Resources)
+            {
+                String newName = resouce.Name.Replace(name, encName);
+                if(resouce.Name != newName)Console.WriteLine($"{resouce.Name} -> {newName}");
+                resouce.Name = newName;
+            }
+        }
+
         public static void obfuscate_classes(ModuleDef md)
         {
             foreach (var type in md.GetTypes())
             {
                 string encName = random_string(10);
                 Console.WriteLine($"{type.Name} -> {encName}");
+                obfuscate_resources(md, type.Name, encName);
                 type.Name = encName;
             }
 
@@ -131,6 +143,7 @@ namespace Obfuscate
             {
                 string encName = random_string(10);
                 Console.WriteLine($"{type.Namespace} -> {encName}");
+                obfuscate_resources(md, type.Namespace, encName);
                 type.Namespace = encName;
             }
 
